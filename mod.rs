@@ -1,30 +1,16 @@
-#![feature(const_fn)]
-#![feature(alloc, allocator_api)]
-#![feature(pointer_methods)]
-#![no_std]
-
-#[cfg(test)]
-#[macro_use]
-extern crate std;
-
-#[cfg(feature = "use_spin")]
-extern crate spin;
+use ::sync::irq_lock as spin;
 
 extern crate alloc;
 
 use alloc::alloc::{Alloc, AllocErr, Layout};
 use core::alloc::{GlobalAlloc};
 use core::mem;
-#[cfg(feature = "use_spin")]
 use core::ops::Deref;
 use core::ptr::NonNull;
-use hole::{Hole, HoleList};
-#[cfg(feature = "use_spin")]
-use spin::Mutex;
+use self::hole::{Hole, HoleList};
+use self::spin::Mutex;
 
 mod hole;
-#[cfg(test)]
-mod test;
 
 /// A fixed size heap backed by a linked list of free memory blocks.
 pub struct Heap {
@@ -140,10 +126,8 @@ unsafe impl Alloc for Heap {
     }
 }
 
-#[cfg(feature = "use_spin")]
 pub struct LockedHeap(Mutex<Heap>);
 
-#[cfg(feature = "use_spin")]
 impl LockedHeap {
     /// Creates an empty heap. All allocate calls will return `None`.
     pub const fn empty() -> LockedHeap {
@@ -163,7 +147,6 @@ impl LockedHeap {
     }
 }
 
-#[cfg(feature = "use_spin")]
 impl Deref for LockedHeap {
     type Target = Mutex<Heap>;
 
@@ -172,7 +155,6 @@ impl Deref for LockedHeap {
     }
 }
 
-#[cfg(feature = "use_spin")]
 unsafe impl GlobalAlloc for LockedHeap {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         self.0
